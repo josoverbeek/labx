@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LAB-X Scanner</title>
+<style>
+body{margin:0;background:#061018;color:#d8fff4;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif}
+#wrap{max-width:430px;margin:auto;padding:18px}
+h1{text-align:center;color:#6ef7c7}
+#camWrap{position:relative;border:2px solid #3de0b4;border-radius:16px;overflow:hidden;background:#000}
+video{width:100%;display:block;background:#000}
+#overlay{position:absolute;inset:0;pointer-events:none}
+#frame{position:absolute;left:12%;top:35%;width:76%;height:22%;border:3px solid #57ff7d;border-radius:8px;box-sizing:border-box}
+#line{position:absolute;left:12%;width:76%;height:3px;background:#57ff7d;top:35%;animation:scan 1.6s linear infinite}
+@keyframes scan{0%{top:35%}100%{top:57%}}
+#status{text-align:center;font-size:20px;margin:12px}
+button{width:100%;padding:15px;border:none;border-radius:12px;font-size:20px;background:#0d8cff;color:white}
+#ok{display:none;text-align:center;padding:30px}
+.check{font-size:96px}
+</style>
+</head>
+<body>
+<div id="wrap">
+<h1>🧪 LAB-X Veiligheidsscanner</h1>
+
+<div id="camWrap">
+<video id="video" autoplay playsinline muted></video>
+<div id="overlay">
+<div id="frame"></div>
+<div id="line"></div>
+</div>
+</div>
+
+<div id="status">Richt de camera op de barcode van de toegangspas.</div>
+<button id="start">Start scanner</button>
+
+<div id="ok">
+<div class="check">✅</div>
+<h2 style="color:#64ff8d">TOEGANG VERLEEND</h2>
+<p>Identiteit bevestigd.</p>
+<p>Welkom in het geheime laboratorium.</p>
+</div>
+</div>
+
+<script>
+const startBtn=document.getElementById("start");
+const video=document.getElementById("video");
+const status=document.getElementById("status");
+
+function beep(){
+ try{
+ const c=new(window.AudioContext||window.webkitAudioContext)();
+ const o=c.createOscillator(),g=c.createGain();
+ o.connect(g);g.connect(c.destination);
+ o.frequency.value=1400;g.gain.value=0.05;
+ o.start();o.stop(c.currentTime+0.15);
+ }catch(e){}
+}
+
+startBtn.onclick=async()=>{
+ startBtn.disabled=true;
+ try{
+   const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+   video.srcObject=stream;
+   status.textContent="Zoeken naar barcode...";
+   const msgs=[
+    "Barcode gedetecteerd...",
+    "Authenticatie controleren...",
+    "DNA-profiel vergelijken...",
+    "Beveiligingsniveau ALFA..."
+   ];
+   let i=0;
+   const iv=setInterval(()=>status.textContent=msgs[(i++)%msgs.length],900);
+   setTimeout(()=>{
+      clearInterval(iv);
+      beep();
+      if(navigator.vibrate) navigator.vibrate([100,50,100]);
+      stream.getTracks().forEach(t=>t.stop());
+      document.getElementById("camWrap").style.display="none";
+      status.style.display="none";
+      startBtn.style.display="none";
+      document.getElementById("ok").style.display="block";
+      document.body.style.background="#08210f";
+   },5000);
+ }catch(err){
+   status.textContent="Camera niet beschikbaar. Controle wordt gesimuleerd...";
+   setTimeout(()=>{
+      beep();
+      document.getElementById("camWrap").style.display="none";
+      status.style.display="none";
+      startBtn.style.display="none";
+      document.getElementById("ok").style.display="block";
+   },3500);
+ }
+}
+</script>
+</body>
+</html>
